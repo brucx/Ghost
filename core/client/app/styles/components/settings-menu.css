@@ -13,13 +13,13 @@
     z-index: 500;
     overflow: hidden;
     width: 350px;
-    border-left: #e1e1e1 1px solid;
+    border-left: #dfe1e3 1px solid;
     background: #fff;
     transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
     transform: translate3d(350px, 0px, 0px);
 }
 
-body.settings-menu-expanded .settings-menu-container {
+.settings-menu-expanded .settings-menu-container {
     transform: translate3d(0, 0px, 0px);
 }
 
@@ -102,6 +102,10 @@ body.settings-menu-expanded .settings-menu-container {
     margin: 0 0 1.6rem 0;
 }
 
+.settings-menu-content .image-uploader .description {
+    font-size: 1.4rem;
+}
+
 .settings-menu-content .image-uploader.image-uploader-url {
     padding: 35px 45px;
 }
@@ -153,14 +157,25 @@ body.settings-menu-expanded .settings-menu-container {
 /* Background
 /* ---------------------------------------------------------- */
 
-body.settings-menu-expanded .content-cover {
+.settings-menu-expanded .content-cover,
+.mobile-menu-expanded .content-cover {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    z-index: 600;
+    z-index: 900;
     transition: transform 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
-    transform: translate3d(-350px, 0px, 0px);
     /* Not off the screen, to give a parallax effect */
+}
+.settings-menu-expanded .content-cover {
+    transform: translate3d(-350px, 0px, 0px);
+}
+.mobile-menu-expanded .content-cover {
+    transform: translate3d(235px, 0px, 0px);
+}
+@media (max-width: 500px) {
+    .mobile-menu-expanded .content-cover {
+        transform: translate3d(75vw, 0, 0);
+    }
 }

@@ -67,21 +67,18 @@ var _              = require('lodash'),
                     files: [
                         'content/themes/casper/assets/css/*.css',
                         'content/themes/casper/assets/js/*.js',
-                        'core/client/dist/*.js',
-                        'core/client/dist/*.css',
-                        'core/built/scripts/*.js',
-                        'core/client/app/html/*.html'
+                        'core/built/assets/*.js',
+                        'core/client/dist/index.html'
                     ],
                     options: {
                         livereload: true
                     }
                 },
                 express: {
-                    files:  ['core/server.js', 'core/server/**/*.js'],
+                    files:  ['core/ghost-server.js', 'core/server/**/*.js'],
                     tasks:  ['express:dev'],
                     options: {
-                        // **Note:** Without this option specified express won't be reloaded
-                        nospawn: true
+                        spawn: false
                     }
                 },
                 csscomb: {
@@ -270,7 +267,7 @@ var _              = require('lodash'),
                 coverage: {
                     // TODO fix the timing/async & cleanup issues with the route and integration tests so that
                     // they can also have coverage generated for them & the order doesn't matter
-                    src: ['core/test/integration', 'core/test/unit'],
+                    src: ['core/test/unit'],
                     options: {
                         mask: '**/*_spec.js',
                         coverageFolder: 'core/test/coverage',
@@ -336,7 +333,7 @@ var _              = require('lodash'),
 
                 test: {
                     command: function (test) {
-                        return 'node ' + mochaPath  + ' --timeout=15000 --ui=bdd --reporter=spec core/test/' + test;
+                        return 'node ' + mochaPath  + ' --timeout=15000 --ui=bdd --reporter=spec --colors core/test/' + test;
                     }
                 },
 
@@ -361,8 +358,8 @@ var _              = require('lodash'),
                     src: ['.'],
                     options: {
                         onlyUpdated: true,
-                        exclude: 'node_modules,.git,.tmp,bower_components,content,*built,*test,*doc*,*vendor,' +
-                            'config.js,.travis.yml,*.min.css,screen.css',
+                        exclude: 'node_modules,bower_components,content,core/client,*test,*doc*,' +
+                        '*vendor,config.js,*buil*,.dist*,.idea,.git*,.travis.yml,.bower*,.editorconfig,.js*,*.md',
                         extras: ['fileSearch']
                     }
                 }
@@ -507,7 +504,7 @@ var _              = require('lodash'),
             }, function (error, result, code) {
                 /*jshint unused:false*/
                 if (error) {
-                    grunt.fail.fatal(result.stdout);
+                    grunt.fail.fatal(result.stderr);
                 }
                 grunt.log.writeln(result.stdout);
                 done();
@@ -539,6 +536,23 @@ var _              = require('lodash'),
         // ### Documentation
         // Run `grunt docs` to generate annotated source code using the documentation described in the code comments.
         grunt.registerTask('docs', 'Generate Docs', ['docker']);
+
+        // Runun `grunt watch-docs` to setup livereload & watch whilst you're editing the docs
+        grunt.registerTask('watch-docs', function () {
+            grunt.config.merge({
+                watch: {
+                    docs: {
+                        files: ['core/server/**/*', 'index.js', 'Gruntfile.js', 'config.example.js'],
+                        tasks: ['docker'],
+                        options: {
+                            livereload: true
+                        }
+                    }
+                }
+            });
+
+            grunt.task.run('watch:docs');
+        });
 
         // ## Testing
 
@@ -620,7 +634,7 @@ var _              = require('lodash'),
         // details of each of the test suites.
         //
         grunt.registerTask('test-all', 'Run tests and lint code',
-            ['test-routes', 'test-module', 'test-unit', 'test-integration', 'shell:ember:test', 'test-functional']);
+            ['test-routes', 'test-module', 'test-unit', 'test-integration', 'test-ember', 'test-functional']);
 
         // ### Lint
         //
@@ -718,7 +732,7 @@ var _              = require('lodash'),
         );
 
         // ### Ember unit tests *(sub task)*
-        // `grunt testem` will run just the ember unit tests
+        // `grunt test-ember` will run just the ember unit tests
         grunt.registerTask('test-ember', 'Run the ember unit tests',
             ['test-setup', 'shell:ember:test']
         );
@@ -742,7 +756,7 @@ var _              = require('lodash'),
         // The purpose of the functional tests is to ensure that Ghost is working as is expected from a user perspective
         // including buttons and other important interactions in the admin UI.
         grunt.registerTask('test-functional', 'Run functional interface tests (CasperJS)',
-            ['test-setup', 'cleanDatabase', 'express:test', 'spawnCasperJS', 'express:test:stop', 'test-functional-setup']
+            ['test-setup', 'shell:ember:dev', 'cleanDatabase', 'express:test', 'spawnCasperJS', 'express:test:stop', 'test-functional-setup']
         );
 
         // ### Functional tests for the setup process
@@ -938,5 +952,4 @@ var _              = require('lodash'),
             ['init', 'shell:ember:prod', 'uglify:release', 'clean:release',  'shell:shrinkwrap', 'copy:release', 'compress:release']);
     };
 
-// Export the configuration
 module.exports = configureGrunt;

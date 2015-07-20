@@ -3,18 +3,22 @@ import {request as ajax} from 'ic-ajax';
 import ValidationEngine from 'ghost/mixins/validation-engine';
 
 export default Ember.Controller.extend(ValidationEngine, {
-    submitting: false,
-
     // ValidationEngine settings
     validationType: 'signup',
+
+    submitting: false,
+
+    ghostPaths: Ember.inject.service('ghost-paths'),
+    notifications: Ember.inject.service(),
 
     actions: {
         signup: function () {
             var self = this,
                 model = this.get('model'),
-                data = model.getProperties('name', 'email', 'password', 'token');
+                data = model.getProperties('name', 'email', 'password', 'token'),
+                notifications = this.get('notifications');
 
-            self.notifications.closePassive();
+            notifications.closePassive();
 
             this.toggleProperty('submitting');
             this.validate({format: false}).then(function () {
@@ -35,13 +39,15 @@ export default Ember.Controller.extend(ValidationEngine, {
                         identification: self.get('model.email'),
                         password: self.get('model.password')
                     });
-                }, function (resp) {
+                }).catch(function (resp) {
                     self.toggleProperty('submitting');
-                    self.notifications.showAPIError(resp);
+                    notifications.showAPIError(resp);
                 });
-            }, function (errors) {
+            }).catch(function (errors) {
                 self.toggleProperty('submitting');
-                self.notifications.showErrors(errors);
+                if (errors) {
+                    notifications.showErrors(errors);
+                }
             });
         }
     }

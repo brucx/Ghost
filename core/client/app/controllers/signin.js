@@ -7,6 +7,9 @@ export default Ember.Controller.extend(ValidationEngine, {
 
     submitting: false,
 
+    ghostPaths: Ember.inject.service('ghost-paths'),
+    notifications: Ember.inject.service(),
+
     actions: {
         authenticate: function () {
             var model = this.get('model'),
@@ -28,19 +31,22 @@ export default Ember.Controller.extend(ValidationEngine, {
             $('#login').find('input').trigger('change');
 
             this.validate({format: false}).then(function () {
-                self.notifications.closePassive();
+                self.get('notifications').closePassive();
                 self.send('authenticate');
             }).catch(function (errors) {
-                self.notifications.showErrors(errors);
+                if (errors) {
+                    self.get('notifications').showErrors(errors);
+                }
             });
         },
 
         forgotten: function () {
             var email = this.get('model.identification'),
+                notifications = this.get('notifications'),
                 self = this;
 
             if (!email) {
-                return this.notifications.showError('Enter email address to reset password.');
+                return notifications.showError('Enter email address to reset password.');
             }
 
             self.set('submitting', true);
@@ -55,10 +61,10 @@ export default Ember.Controller.extend(ValidationEngine, {
                 }
             }).then(function () {
                 self.set('submitting', false);
-                self.notifications.showSuccess('Please check your email for instructions.');
+                notifications.showSuccess('Please check your email for instructions.');
             }).catch(function (resp) {
                 self.set('submitting', false);
-                self.notifications.showAPIError(resp, {defaultErrorText: 'There was a problem with the reset, please try again.'});
+                notifications.showAPIError(resp, {defaultErrorText: 'There was a problem with the reset, please try again.'});
             });
         }
     }

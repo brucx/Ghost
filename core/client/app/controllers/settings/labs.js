@@ -1,11 +1,13 @@
 import Ember from 'ember';
 import {request as ajax} from 'ic-ajax';
 
-export default Ember.Controller.extend(Ember.Evented, {
-    needs: ['feature'],
-
+export default Ember.Controller.extend({
     uploadButtonText: 'Import',
     importErrors: '',
+
+    ghostPaths: Ember.inject.service('ghost-paths'),
+    notifications: Ember.inject.service(),
+
     labsJSON: Ember.computed('model.labs', function () {
         return JSON.parse(this.get('model.labs') || {});
     }),
@@ -28,11 +30,13 @@ export default Ember.Controller.extend(Ember.Evented, {
     actions: {
         onUpload: function (file) {
             var self = this,
-                formData = new FormData();
+                formData = new FormData(),
+                notifications = this.get('notifications'),
+                currentUserId = this.get('session.user.id');
 
             this.set('uploadButtonText', 'Importing');
             this.set('importErrors', '');
-            this.notifications.closePassive();
+            notifications.closePassive();
 
             formData.append('importfile', file);
 
@@ -45,22 +49,18 @@ export default Ember.Controller.extend(Ember.Evented, {
                 processData: false
             }).then(function () {
                 // Clear the store, so that all the new data gets fetched correctly.
-                self.store.unloadAll('post');
-                self.store.unloadAll('tag');
-                self.store.unloadAll('user');
-                self.store.unloadAll('role');
-                self.store.unloadAll('setting');
-                self.store.unloadAll('notification');
-                self.notifications.showSuccess('Import successful.');
+                self.store.unloadAll();
+                // Reload currentUser and set session
+                self.set('session.user', self.store.find('user', currentUserId));
+                notifications.showSuccess('Import successful.');
             }).catch(function (response) {
                 if (response && response.jqXHR && response.jqXHR.responseJSON && response.jqXHR.responseJSON.errors) {
                     self.set('importErrors', response.jqXHR.responseJSON.errors);
                 }
 
-                self.notifications.showError('Import Failed');
+                notifications.showError('Import Failed');
             }).finally(function () {
                 self.set('uploadButtonText', 'Import');
-                self.trigger('reset');
             });
         },
 
@@ -77,17 +77,17 @@ export default Ember.Controller.extend(Ember.Evented, {
         },
 
         sendTestEmail: function () {
-            var self = this;
+            var notifications = this.get('notifications');
 
             ajax(this.get('ghostPaths.url').api('mail', 'test'), {
                 type: 'POST'
             }).then(function () {
-                self.notifications.showSuccess('Check your email for the test message.');
+                notifications.showSuccess('Check your email for the test message.');
             }).catch(function (error) {
                 if (typeof error.jqXHR !== 'undefined') {
-                    self.notifications.showAPIError(error);
+                    notifications.showAPIError(error);
                 } else {
-                    self.notifications.showErrors(error);
+                    notifications.showErrors(error);
                 }
             });
         }
